@@ -98,6 +98,17 @@ erDiagram
         timestamp recorded_at
     }
 
+    incident_evidence {
+        bigint id PK
+        bigint incident_id FK
+        varchar file_type "IMAGE / VIDEO / AUDIO"
+        varchar imagekit_file_id "NOT NULL, ImageKit ID"
+        varchar file_url "NOT NULL, ImageKit CDN URL"
+        varchar file_name "ชื่อไฟล์ต้นฉบับ"
+        bigint file_size "bytes"
+        timestamp created_at
+    }
+
     %% ==================== CHAT ENTITIES ====================
 
     chat_messages {
@@ -112,8 +123,9 @@ erDiagram
     chat_attachments {
         bigint id PK
         bigint message_id FK
-        varchar file_type "IMAGE / VIDEO"
-        varchar file_url "NOT NULL"
+        varchar file_type "IMAGE / VIDEO / AUDIO"
+        varchar imagekit_file_id "NOT NULL, ImageKit ID"
+        varchar file_url "NOT NULL, ImageKit CDN URL"
         varchar file_name "ชื่อไฟล์ต้นฉบับ"
         bigint file_size "bytes"
         timestamp created_at
@@ -156,6 +168,7 @@ erDiagram
     staff ||--o{ team_members : "อยู่ในทีม"
     incident_assignments ||--o{ incident_assignment_members : "snapshot สมาชิก"
     staff ||--o{ incident_assignment_members : "ช่วยเหลือจริง"
+    incidents ||--o{ incident_evidence : "หลักฐานแจ้งเหตุ"
     incidents ||--o{ chat_messages : "แชทในรายการ"
     chat_messages ||--o{ chat_attachments : "ไฟล์แนบ"
     admins ||--o{ block_history : "ทำการ block/unblock"
@@ -211,6 +224,13 @@ erDiagram
   - `COMPLETED` → ช่วยเหลือสำเร็จ
   - `CANCELLED` → ยกเลิก
 
+### 7.1 `incident_evidence` — หลักฐานประกอบการแจ้งเหตุ
+
+- ผู้แจ้งเหตุแนบหลักฐานได้ตอนสร้างรายการ (รูปภาพ / วิดีโอ / เสียง)
+- 1 รายการแจ้งเหตุ แนบหลักฐานได้หลายไฟล์
+- เก็บ `imagekit_file_id` สำหรับจัดการไฟล์บน ImageKit (ลบ/แก้ไข)
+- เก็บ `file_url` เป็น CDN URL สำหรับแสดงผลฝั่ง client
+
 ### 8. `incident_assignments` — มอบหมายทีม ↔ รายการแจ้งเหตุ (M:N)
 
 - 1 รายการแจ้งเหตุมีหลายทีมช่วยได้
@@ -233,10 +253,12 @@ erDiagram
 - รองรับหลายคน: ทุก staff ในทุกทีมที่รับงาน + ผู้แจ้งเหตุ สามารถส่งข้อความได้
 - `message` เป็น optional (กรณีส่งแค่รูป/วิดีโอ)
 
-### 11. `chat_attachments` — ไฟล์แนบในแชท (รูปภาพ / วิดีโอ)
+### 11. `chat_attachments` — ไฟล์แนบในแชท (รูปภาพ / วิดีโอ / เสียง)
 
 - 1 ข้อความแนบไฟล์ได้หลายไฟล์
-- เก็บ `file_type` (IMAGE / VIDEO), URL, ชื่อไฟล์, ขนาด
+- เก็บ `file_type` (IMAGE / VIDEO / AUDIO)
+- เก็บ `imagekit_file_id` สำหรับจัดการไฟล์บน ImageKit (ลบ/แก้ไข)
+- เก็บ `file_url` เป็น CDN URL สำหรับแสดงผลฝั่ง client
 
 ### 12. `block_history` — ประวัติการ block/unblock
 
@@ -268,6 +290,7 @@ erDiagram
 | `incidents` ↔ `teams`                                  | **Many-to-Many** | ผ่าน `incident_assignments`            |
 | `incident_assignments` → `incident_assignment_members` | **One-to-Many**  | snapshot สมาชิกที่ช่วยจริง             |
 | `staff` → `incident_assignment_members`                | **One-to-Many**  | staff คนเดียวช่วยหลายงาน               |
+| `incidents` → `incident_evidence`                      | **One-to-Many**  | 1 รายการ แนบหลักฐานได้หลายไฟล์         |
 | `incidents` → `chat_messages`                          | **One-to-Many**  | 1 รายการ = 1 ห้องแชท                   |
 | `chat_messages` → `chat_attachments`                   | **One-to-Many**  | 1 ข้อความ แนบได้หลายไฟล์               |
 | `admins` → `block_history`                             | **One-to-Many**  | admin ทำ block/unblock                 |
@@ -293,6 +316,9 @@ CREATE INDEX idx_assignment_members_staff ON incident_assignment_members(staff_i
 
 -- ค้นหาข้อความแชทตามรายการแจ้งเหตุ
 CREATE INDEX idx_chat_incident ON chat_messages(incident_id, sent_at);
+
+-- ค้นหาหลักฐานตามรายการแจ้งเหตุ
+CREATE INDEX idx_evidence_incident ON incident_evidence(incident_id);
 
 -- ค้นหาสมาชิกในทีม (เฉพาะคนที่ยังอยู่)
 CREATE INDEX idx_team_members_active ON team_members(team_id) WHERE left_at IS NULL;
