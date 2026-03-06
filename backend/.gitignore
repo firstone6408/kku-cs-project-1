@@ -34,3 +34,5 @@ build/
 
 ### Others ###
 /src/main/resources/database.properties
+/src/main/resources/imageKit.properties
+/src/main/resources/jwt.properties
