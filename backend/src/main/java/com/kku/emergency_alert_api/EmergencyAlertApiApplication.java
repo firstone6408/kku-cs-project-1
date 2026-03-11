@@ -8,6 +8,8 @@ public class EmergencyAlertApiApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(EmergencyAlertApiApplication.class, args);
+
+		System.out.println(" - Reloaded Success");
 	}
 
 }
