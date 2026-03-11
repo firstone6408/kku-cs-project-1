@@ -1,5 +1,9 @@
 import { API_CONFIG } from "@/configs/api.config";
-import { RegisterReporterRequest, RegisterStaffRequest, LoginRequest } from "@/types/auth.type";
+import {
+  RegisterReporterRequest,
+  RegisterStaffRequest,
+  LoginRequest,
+} from "@/types/auth.type";
 import { templateValidateResponse, withApiHandling } from "@/utils/api.utils";
 import { z } from "zod";
 
@@ -14,7 +18,7 @@ const loginResponseSchema = templateValidateResponse(
     role: z.string(),
     isBlocked: z.boolean(),
     createdAt: z.string(),
-  })
+  }),
 );
 
 // สมัครผู้แจ้งเหตุ (Reporter)
@@ -25,7 +29,7 @@ export async function registerReporter(data: RegisterReporterRequest) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-    { validateResponse: loginResponseSchema }
+    { validateResponse: loginResponseSchema },
   );
 }
 
@@ -37,7 +41,7 @@ export async function registerStaff(data: RegisterStaffRequest) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-    { validateResponse: loginResponseSchema }
+    { validateResponse: loginResponseSchema },
   );
 }
 
@@ -49,7 +53,7 @@ export async function loginReporter(data: LoginRequest) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-    { validateResponse: loginResponseSchema }
+    { validateResponse: loginResponseSchema },
   );
 }
 
@@ -61,6 +65,6 @@ export async function loginStaff(data: LoginRequest) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-    { validateResponse: loginResponseSchema }
+    { validateResponse: loginResponseSchema },
   );
 }

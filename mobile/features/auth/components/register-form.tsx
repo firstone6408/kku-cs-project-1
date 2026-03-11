@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Alert, Pressable, ScrollView } from "react-native";
+import { Alert, ScrollView } from "react-native";
 import { useMutation } from "@tanstack/react-query";
-import { EyeIcon, EyeOffIcon } from "lucide-react-native";
+import { UserPlus } from "lucide-react-native";
 
 import {
   registerReporterSchema,
@@ -16,12 +16,14 @@ import {
 
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Heading } from "@/components/ui/heading";
-import { Input, InputField, InputIcon, InputSlot } from "@/components/ui/input";
 import { Button, ButtonText } from "@/components/ui/button";
 import { FormControl } from "@/components/ui/form-control";
+
+import FormInput from "@/components/shared/input/form-input";
+import InputPassword from "@/components/shared/input/input-password";
+import SegmentedControl from "@/components/shared/tab/segmented-control";
 
 // ประเภท role ที่เลือกสมัคร
 type RoleTab = "REPORTER" | "STAFF";
@@ -34,7 +36,6 @@ export default function RegisterForm() {
   const [phone, setPhone] = useState("");
   const [staffRole, setStaffRole] = useState<StaffRole>("VOLUNTEER");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
 
   // useMutation สำหรับ register
   const registerMutation = useMutation({
@@ -63,6 +64,7 @@ export default function RegisterForm() {
         );
         return;
       }
+      registerMutation.reset();
       registerMutation.mutate(parsed.data);
     } else {
       const parsed = registerStaffSchema.safeParse({
@@ -79,166 +81,127 @@ export default function RegisterForm() {
         );
         return;
       }
+      registerMutation.reset();
       registerMutation.mutate(parsed.data);
     }
   };
 
   return (
     <ScrollView
-      className="flex-1"
-      contentContainerClassName="justify-center px-6 py-8"
+      className="flex-1 bg-background-0"
+      contentContainerClassName="justify-center px-6 py-10"
+      showsVerticalScrollIndicator={false}
     >
-      <VStack space="xl">
-        {/* หัวข้อ */}
-        <VStack className="items-center mb-4">
-          <Heading size="2xl" className="text-typography-900">
-            สร้างบัญชี
-          </Heading>
-          <Text size="sm" className="text-typography-500 mt-1">
-            เลือกประเภทผู้ใช้แล้วกรอกข้อมูล
-          </Text>
+      <VStack space="2xl">
+        {/* หัวข้อและ Logo */}
+        <VStack className="items-center mb-4" space="md">
+          <Box className="bg-primary-50 p-4 rounded-full mb-2">
+            <UserPlus size={48} color="#FF6F00" strokeWidth={1.5} />
+          </Box>
+          <VStack className="items-center">
+            <Heading
+              size="3xl"
+              className="text-typography-900 font-bold tracking-tight"
+            >
+              สร้างบัญชีใหม่
+            </Heading>
+            <Text
+              size="md"
+              className="text-typography-500 mt-2 text-center px-4 leading-relaxed"
+            >
+              ร่วมเป็นส่วนหนึ่งในการช่วยเหลือและแจ้งเหตุฉุกเฉิน
+            </Text>
+          </VStack>
         </VStack>
 
         {/* Tab สลับ Reporter / Staff */}
-        <HStack className="bg-background-100 rounded-xl p-1">
-          <Pressable
-            className={`flex-1 py-3 rounded-lg ${activeRole === "REPORTER" ? "bg-background-0 shadow-sm" : ""}`}
-            onPress={() => setActiveRole("REPORTER")}
-          >
-            <Text
-              className={`text-center font-semibold ${activeRole === "REPORTER" ? "text-primary-600" : "text-typography-400"}`}
-            >
-              ผู้แจ้งเหตุ
-            </Text>
-          </Pressable>
-          <Pressable
-            className={`flex-1 py-3 rounded-lg ${activeRole === "STAFF" ? "bg-background-0 shadow-sm" : ""}`}
-            onPress={() => setActiveRole("STAFF")}
-          >
-            <Text
-              className={`text-center font-semibold ${activeRole === "STAFF" ? "text-primary-600" : "text-typography-400"}`}
-            >
-              พนักงาน
-            </Text>
-          </Pressable>
-        </HStack>
+        <Box className="shadow-sm rounded-xl mb-2">
+          <SegmentedControl
+            value={activeRole}
+            onChange={setActiveRole}
+            options={[
+              { value: "REPORTER", label: "ผู้แจ้งเหตุทั่วไป" },
+              { value: "STAFF", label: "พนักงาน / อาสา" },
+            ]}
+          />
+        </Box>
 
         {/* ฟอร์ม */}
-        <FormControl isInvalid={!!registerMutation.error}>
-          <VStack space="lg">
+        <FormControl isInvalid={!!registerMutation.error} className="w-full">
+          <VStack space="xl">
             {/* Email */}
-            <VStack space="xs">
-              <Text className="text-typography-500 font-medium">Email</Text>
-              <Input size="xl">
-                <InputField
-                  placeholder="email@example.com"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={email}
-                  onChangeText={setEmail}
-                />
-              </Input>
-            </VStack>
+            <FormInput
+              label="อีเมล"
+              placeholder="email@example.com"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+              isInvalid={!!registerMutation.error && !email}
+            />
 
             {/* ชื่อ-สกุล */}
-            <VStack space="xs">
-              <Text className="text-typography-500 font-medium">ชื่อ-สกุล</Text>
-              <Input size="xl">
-                <InputField
-                  placeholder="ชื่อ-สกุล"
-                  value={fullName}
-                  onChangeText={setFullName}
-                />
-              </Input>
-            </VStack>
+            <FormInput
+              label="ชื่อ-สกุล"
+              placeholder="ชื่อ-สกุล"
+              value={fullName}
+              onChangeText={setFullName}
+              isInvalid={!!registerMutation.error && !fullName}
+              autoCapitalize="words"
+            />
 
             {/* เบอร์โทร */}
-            <VStack space="xs">
-              <Text className="text-typography-500 font-medium">
-                เบอร์โทรศัพท์
-              </Text>
-              <Input size="xl">
-                <InputField
-                  placeholder="0812345678"
-                  keyboardType="phone-pad"
-                  value={phone}
-                  onChangeText={setPhone}
-                />
-              </Input>
-            </VStack>
+            <FormInput
+              label="เบอร์โทรศัพท์"
+              placeholder="0812345678"
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+              isInvalid={!!registerMutation.error && !phone}
+            />
 
             {/* เลือก role (เฉพาะ Staff) */}
             {activeRole === "STAFF" && (
               <VStack space="xs">
-                <Text className="text-typography-500 font-medium">บทบาท</Text>
-                <HStack space="md">
-                  <Pressable
-                    className={`flex-1 py-3 rounded-xl border-2 ${
-                      staffRole === "VOLUNTEER"
-                        ? "border-primary-500 bg-primary-50"
-                        : "border-outline-200 bg-background-0"
-                    }`}
-                    onPress={() => setStaffRole("VOLUNTEER")}
-                  >
-                    <Text
-                      className={`text-center font-semibold ${
-                        staffRole === "VOLUNTEER"
-                          ? "text-primary-600"
-                          : "text-typography-400"
-                      }`}
-                    >
-                      อาสาสมัคร
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    className={`flex-1 py-3 rounded-xl border-2 ${
-                      staffRole === "OFFICER"
-                        ? "border-primary-500 bg-primary-50"
-                        : "border-outline-200 bg-background-0"
-                    }`}
-                    onPress={() => setStaffRole("OFFICER")}
-                  >
-                    <Text
-                      className={`text-center font-semibold ${
-                        staffRole === "OFFICER"
-                          ? "text-primary-600"
-                          : "text-typography-400"
-                      }`}
-                    >
-                      เจ้าหน้าที่
-                    </Text>
-                  </Pressable>
-                </HStack>
+                <Text className="text-typography-600 font-semibold mb-1">
+                  บทบาท
+                </Text>
+                <SegmentedControl
+                  value={staffRole}
+                  onChange={setStaffRole}
+                  options={[
+                    { value: "VOLUNTEER", label: "อาสาสมัคร" },
+                    { value: "OFFICER", label: "เจ้าหน้าที่" },
+                  ]}
+                />
               </VStack>
             )}
 
             {/* Password */}
-            <VStack space="xs">
-              <Text className="text-typography-500 font-medium">รหัสผ่าน</Text>
-              <Input size="xl">
-                <InputField
-                  placeholder="รหัสผ่าน (อย่างน้อย 6 ตัว)"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChangeText={setPassword}
-                />
-                <InputSlot
-                  className="pr-3"
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <InputIcon as={showPassword ? EyeIcon : EyeOffIcon} />
-                </InputSlot>
-              </Input>
-            </VStack>
+            <InputPassword
+              label="รหัสผ่าน"
+              placeholder="รหัสผ่าน (อย่างน้อย 6 ตัว)"
+              value={password}
+              setValue={setPassword}
+              isInvalid={!!registerMutation.error && !password}
+            />
+
+            {/* Error Message from Mutation */}
+            {registerMutation.isError && (
+              <Box className="bg-error-50 p-3 rounded-lg border border-error-200 mt-2">
+                <Text className="text-error-600 font-medium text-sm text-center">
+                  เกิดข้อผิดพลาดในการสมัครสมาชิก
+                </Text>
+              </Box>
+            )}
 
             {/* ปุ่มสมัคร */}
             <Button
               size="xl"
               onPress={handleRegister}
               isDisabled={registerMutation.isPending}
-              className="rounded-xl mt-2"
+              className="rounded-2xl mt-6 shadow-md shadow-primary-500/30 bg-primary-600 hover:bg-primary-700 active:bg-primary-800"
             >
-              <ButtonText>
+              <ButtonText className="font-bold text-lg">
                 {registerMutation.isPending
                   ? "กำลังสร้างบัญชี..."
                   : "สร้างบัญชี"}

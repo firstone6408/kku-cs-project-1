@@ -1,7 +1,16 @@
 import { useAuth } from "@/store/auth.store";
 import { User } from "@/types/auth.type";
-import { loginReporter, loginStaff, registerReporter, registerStaff } from "../api/auth.api";
-import { LoginInput, RegisterReporterInput, RegisterStaffInput } from "../schemas/auth.schema";
+import {
+  loginReporter,
+  loginStaff,
+  registerReporter,
+  registerStaff,
+} from "../api/auth.api";
+import {
+  LoginInput,
+  RegisterReporterInput,
+  RegisterStaffInput,
+} from "../schemas/auth.schema";
 
 // ใช้ร่วมกับ useMutation — รับข้อมูลจาก form แล้วเรียก API + เก็บ user ลง store
 
@@ -51,7 +60,9 @@ export async function loginStaffAction(data: LoginInput): Promise<void> {
 }
 
 // Register Reporter — สมัคร + auto-login (เก็บ token ทันที)
-export async function registerReporterAction(data: RegisterReporterInput): Promise<void> {
+export async function registerReporterAction(
+  data: RegisterReporterInput,
+): Promise<void> {
   const { result, error } = await registerReporter(data);
 
   if (error.status === "error") {
@@ -73,7 +84,9 @@ export async function registerReporterAction(data: RegisterReporterInput): Promi
 }
 
 // Register Staff — สมัคร + auto-login (เก็บ token ทันที)
-export async function registerStaffAction(data: RegisterStaffInput): Promise<void> {
+export async function registerStaffAction(
+  data: RegisterStaffInput,
+): Promise<void> {
   const { result, error } = await registerStaff(data);
 
   if (error.status === "error") {
