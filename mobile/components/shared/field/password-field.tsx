@@ -1,26 +1,42 @@
-import { Input, InputField, InputIcon, InputSlot } from "@/components/ui/input";
+import {
+  Input,
+  InputField as GluestackInputField,
+  InputIcon,
+  InputSlot,
+} from "@/components/ui/input";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
 import { EyeIcon, EyeOffIcon } from "lucide-react-native";
 import { useState } from "react";
 
-interface InputPasswordProps {
+interface PasswordFieldProps {
+  /** ข้อความ label */
   label?: string;
+  /** placeholder */
   placeholder: string;
+  /** ค่าที่กรอก */
   value: string;
-  setValue: (value: string) => void;
+  /** callback เมื่อค่าเปลี่ยน */
+  onChangeText: (value: string) => void;
+  /** แสดง border สีแดง */
   isInvalid?: boolean;
+  /** ข้อความ error ใต้ input */
   errorMessage?: string;
 }
 
-export default function InputPassword({
+/**
+ * Password field พร้อม eye toggle + label + error — ใช้ร่วมทั้งระบบ
+ *
+ * อ้างอิงจาก POS: `components/shared/field/input-field.tsx` (ปรับเป็น password)
+ */
+export function PasswordField({
   label = "รหัสผ่าน",
   placeholder,
   value,
-  setValue,
+  onChangeText,
   isInvalid = false,
   errorMessage,
-}: InputPasswordProps) {
+}: PasswordFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -31,11 +47,11 @@ export default function InputPassword({
         variant="outline"
         className={`bg-white rounded-xl ${isInvalid ? "border-error-500" : "border-background-200 focus:border-primary-500"}`}
       >
-        <InputField
+        <GluestackInputField
           placeholder={placeholder}
           type={showPassword ? "text" : "password"}
           value={value}
-          onChangeText={setValue}
+          onChangeText={onChangeText}
           className="text-typography-900"
         />
         <InputSlot
