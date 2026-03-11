@@ -34,6 +34,11 @@
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router"]
+    "config": {
+      "googleMaps": {
+        "apiKey": "${process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}"
+      }
+    },
+    "plugins": ["expo-router", "react-native-maps"]
   }
 }
