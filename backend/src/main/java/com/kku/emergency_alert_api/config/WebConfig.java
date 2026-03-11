@@ -38,7 +38,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/auth/**",
                         "/api/admin/create",
                         "/swagger-ui/**",
-                        "/v3/api-docs/**");
+                        "/v3/api-docs/**",
+                        "/api/reporters");
 
         // RoleInterceptor — ตรวจ @RequireRole หลังจาก auth ผ่านแล้ว
         registry.addInterceptor(roleInterceptor)
