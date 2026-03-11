@@ -1,5 +1,6 @@
 import { useAuth } from "@/store/auth.store";
-import { User } from "@/types/auth.type";
+import { User, UserRole, StaffRole } from "@/types/auth.type";
+import { validateSchema, AppError } from "@/utils/validate.utils";
 import {
   loginReporter,
   loginStaff,
@@ -7,102 +8,105 @@ import {
   registerStaff,
 } from "../api/auth.api";
 import {
-  LoginInput,
-  RegisterReporterInput,
-  RegisterStaffInput,
+  loginSchema,
+  registerReporterSchema,
+  registerStaffSchema,
 } from "../schemas/auth.schema";
 
-// ใช้ร่วมกับ useMutation — รับข้อมูลจาก form แล้วเรียก API + เก็บ user ลง store
+// ============================
+// Types — raw data จาก form (ยังไม่ validate)
+// ============================
 
-// Login Reporter — เรียก API แล้วเก็บ token + user เข้า store
-export async function loginReporterAction(data: LoginInput): Promise<void> {
+/** ข้อมูลดิบจาก login form */
+export type LoginFormData = {
+  email: string;
+  password: string;
+};
+
+/** ข้อมูลดิบจาก register form (Reporter) */
+export type RegisterReporterFormData = {
+  email: string;
+  fullName: string;
+  phone: string;
+  password: string;
+};
+
+/** ข้อมูลดิบจาก register form (Staff) */
+export type RegisterStaffFormData = {
+  email: string;
+  fullName: string;
+  phone: string;
+  role: StaffRole;
+  password: string;
+};
+
+// ============================
+// Helpers
+// ============================
+
+/** แปลง API response → User + เก็บลง store */
+function handleAuthResult(result: { data: Record<string, unknown> }) {
+  const data = result.data;
+
+  const user: User = {
+    id: data.id as number,
+    email: data.email as string,
+    fullName: data.fullName as string,
+    phone: data.phone as string,
+    role: data.role as UserRole,
+    isBlocked: data.isBlocked as boolean,
+    createdAt: data.createdAt as string,
+  };
+
+  useAuth.getState().setUser(user);
+  useAuth.getState().setToken(data.token as string);
+}
+
+/** ตรวจ error จาก API แล้ว throw ApiError */
+function checkError(error: { status: string; errorMessage: string }) {
+  if (error.status === "error") {
+    throw new AppError("api", error.errorMessage);
+  }
+}
+
+// ============================
+// Actions — validate → API → store
+// ============================
+
+/** Login ผู้แจ้งเหตุ (Reporter) */
+export async function loginReporterAction(
+  formData: LoginFormData,
+): Promise<void> {
+  const data = validateSchema(loginSchema, formData);
   const { result, error } = await loginReporter(data);
-
-  if (error.status === "error") {
-    throw new Error(error.errorMessage);
-  }
-
-  // เก็บ user + token ลง zustand store (AsyncStorage)
-  const userData: User = {
-    id: result.data.id,
-    email: result.data.email,
-    fullName: result.data.fullName,
-    phone: result.data.phone,
-    role: result.data.role as "REPORTER" | "STAFF",
-    isBlocked: result.data.isBlocked,
-    createdAt: result.data.createdAt,
-  };
-
-  useAuth.getState().setUser(userData);
-  useAuth.getState().setToken(result.data.token);
+  checkError(error);
+  handleAuthResult(result);
 }
 
-// Login Staff — เรียก API แล้วเก็บ token + user เข้า store
-export async function loginStaffAction(data: LoginInput): Promise<void> {
+/** Login พนักงาน (Staff) */
+export async function loginStaffAction(formData: LoginFormData): Promise<void> {
+  const data = validateSchema(loginSchema, formData);
   const { result, error } = await loginStaff(data);
-
-  if (error.status === "error") {
-    throw new Error(error.errorMessage);
-  }
-
-  const userData: User = {
-    id: result.data.id,
-    email: result.data.email,
-    fullName: result.data.fullName,
-    phone: result.data.phone,
-    role: result.data.role as "REPORTER" | "STAFF",
-    isBlocked: result.data.isBlocked,
-    createdAt: result.data.createdAt,
-  };
-
-  useAuth.getState().setUser(userData);
-  useAuth.getState().setToken(result.data.token);
+  checkError(error);
+  handleAuthResult(result);
 }
 
-// Register Reporter — สมัคร + auto-login (เก็บ token ทันที)
+/** สมัครผู้แจ้งเหตุ (Reporter) — validate + API + auto-login */
 export async function registerReporterAction(
-  data: RegisterReporterInput,
+  formData: RegisterReporterFormData,
 ): Promise<void> {
+  const data = validateSchema(registerReporterSchema, formData);
   const { result, error } = await registerReporter(data);
-
-  if (error.status === "error") {
-    throw new Error(error.errorMessage);
-  }
-
-  const userData: User = {
-    id: result.data.id,
-    email: result.data.email,
-    fullName: result.data.fullName,
-    phone: result.data.phone,
-    role: result.data.role as "REPORTER" | "STAFF",
-    isBlocked: result.data.isBlocked,
-    createdAt: result.data.createdAt,
-  };
-
-  useAuth.getState().setUser(userData);
-  useAuth.getState().setToken(result.data.token);
+  checkError(error);
+  handleAuthResult(result);
 }
 
-// Register Staff — สมัคร + auto-login (เก็บ token ทันที)
+/** สมัครพนักงาน (Staff) — validate + API + auto-login */
 export async function registerStaffAction(
-  data: RegisterStaffInput,
+  formData: RegisterStaffFormData,
 ): Promise<void> {
+  const data = validateSchema(registerStaffSchema, formData);
   const { result, error } = await registerStaff(data);
-
-  if (error.status === "error") {
-    throw new Error(error.errorMessage);
-  }
-
-  const userData: User = {
-    id: result.data.id,
-    email: result.data.email,
-    fullName: result.data.fullName,
-    phone: result.data.phone,
-    role: result.data.role as "REPORTER" | "STAFF",
-    isBlocked: result.data.isBlocked,
-    createdAt: result.data.createdAt,
-  };
-
-  useAuth.getState().setUser(userData);
-  useAuth.getState().setToken(result.data.token);
+  checkError(error);
+  handleAuthResult(result);
 }

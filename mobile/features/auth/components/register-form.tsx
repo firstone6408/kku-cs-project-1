@@ -1,88 +1,75 @@
 import { useState } from "react";
-import { Alert, ScrollView } from "react-native";
+import { ScrollView } from "react-native";
 import { useMutation } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react-native";
 
 import {
-  registerReporterSchema,
-  registerStaffSchema,
-  RegisterReporterInput,
-  RegisterStaffInput,
-} from "../schemas/auth.schema";
-import {
   registerReporterAction,
   registerStaffAction,
-} from "../actions/auth.action";
+  RegisterReporterFormData,
+  RegisterStaffFormData,
+} from "@/features/auth/actions/auth.action";
+import {
+  UserRole,
+  StaffRole,
+  USER_ROLES,
+  STAFF_ROLES,
+} from "@/types/auth.type";
+import { AppError } from "@/utils/validate.utils";
 
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
 import { Heading } from "@/components/ui/heading";
-import { Button, ButtonText } from "@/components/ui/button";
 import { FormControl } from "@/components/ui/form-control";
 
-import FormInput from "@/components/shared/input/form-input";
-import InputPassword from "@/components/shared/input/input-password";
-import SegmentedControl from "@/components/shared/tab/segmented-control";
-
-// ประเภท role ที่เลือกสมัคร
-type RoleTab = "REPORTER" | "STAFF";
-type StaffRole = "VOLUNTEER" | "OFFICER";
+import { InputField } from "@/components/shared/field/input-field";
+import { PasswordField } from "@/components/shared/field/password-field";
+import { SegmentedControl } from "@/components/shared/tab/segmented-control";
+import { SubmitButton } from "@/components/shared/button/submit-button";
+import { ErrorMessage } from "@/components/shared/error/error-message";
+import { showToast, useToast } from "@/components/shared/toast/show-toast";
 
 export default function RegisterForm() {
-  const [activeRole, setActiveRole] = useState<RoleTab>("REPORTER");
+  const toast = useToast();
+  const [activeRole, setActiveRole] = useState<UserRole>(USER_ROLES.REPORTER);
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [staffRole, setStaffRole] = useState<StaffRole>("VOLUNTEER");
+  const [staffRole, setStaffRole] = useState<StaffRole>(STAFF_ROLES.VOLUNTEER);
   const [password, setPassword] = useState("");
 
-  // useMutation สำหรับ register
+  // useMutation — action จัดการ validate + API + store ให้หมด
   const registerMutation = useMutation({
-    mutationFn: (data: RegisterReporterInput | RegisterStaffInput) =>
-      activeRole === "REPORTER"
-        ? registerReporterAction(data as RegisterReporterInput)
-        : registerStaffAction(data as RegisterStaffInput),
+    mutationFn: (data: RegisterReporterFormData | RegisterStaffFormData) =>
+      activeRole === USER_ROLES.REPORTER
+        ? registerReporterAction(data as RegisterReporterFormData)
+        : registerStaffAction(data as RegisterStaffFormData),
     onError: (error: Error) => {
-      Alert.alert("สมัครไม่สำเร็จ", error.message);
+      const isValidation =
+        error instanceof AppError && error.type === "validation";
+      showToast(toast, {
+        title: isValidation ? "กรุณาตรวจสอบข้อมูล" : "สมัครไม่สำเร็จ",
+        description: error.message,
+        action: isValidation ? "warning" : "error",
+      });
     },
   });
 
-  // กดปุ่มสมัคร
+  // กดปุ่มสมัคร — ส่ง raw data ไป action (validate อยู่ใน action)
   const handleRegister = () => {
-    if (activeRole === "REPORTER") {
-      const parsed = registerReporterSchema.safeParse({
-        email,
-        fullName,
-        phone,
-        password,
-      });
-      if (!parsed.success) {
-        Alert.alert(
-          "กรุณาตรวจสอบข้อมูล",
-          parsed.error.issues[0]?.message || "ข้อมูลไม่ถูกต้อง",
-        );
-        return;
-      }
-      registerMutation.reset();
-      registerMutation.mutate(parsed.data);
+    registerMutation.reset();
+
+    if (activeRole === USER_ROLES.REPORTER) {
+      registerMutation.mutate({ email, fullName, phone, password });
     } else {
-      const parsed = registerStaffSchema.safeParse({
+      registerMutation.mutate({
         email,
         fullName,
         phone,
         role: staffRole,
         password,
       });
-      if (!parsed.success) {
-        Alert.alert(
-          "กรุณาตรวจสอบข้อมูล",
-          parsed.error.issues[0]?.message || "ข้อมูลไม่ถูกต้อง",
-        );
-        return;
-      }
-      registerMutation.reset();
-      registerMutation.mutate(parsed.data);
     }
   };
 
@@ -96,7 +83,7 @@ export default function RegisterForm() {
         {/* หัวข้อและ Logo */}
         <VStack className="items-center mb-4" space="md">
           <Box className="bg-primary-50 p-4 rounded-full mb-2">
-            <UserPlus size={48} color="#FF6F00" strokeWidth={1.5} />
+            <UserPlus size={48} color="#E8711A" strokeWidth={1.5} />
           </Box>
           <VStack className="items-center">
             <Heading
@@ -120,8 +107,8 @@ export default function RegisterForm() {
             value={activeRole}
             onChange={setActiveRole}
             options={[
-              { value: "REPORTER", label: "ผู้แจ้งเหตุทั่วไป" },
-              { value: "STAFF", label: "พนักงาน / อาสา" },
+              { value: USER_ROLES.REPORTER, label: "ผู้แจ้งเหตุทั่วไป" },
+              { value: USER_ROLES.STAFF, label: "พนักงาน / อาสา" },
             ]}
           />
         </Box>
@@ -129,8 +116,7 @@ export default function RegisterForm() {
         {/* ฟอร์ม */}
         <FormControl isInvalid={!!registerMutation.error} className="w-full">
           <VStack space="xl">
-            {/* Email */}
-            <FormInput
+            <InputField
               label="อีเมล"
               placeholder="email@example.com"
               keyboardType="email-address"
@@ -139,8 +125,7 @@ export default function RegisterForm() {
               isInvalid={!!registerMutation.error && !email}
             />
 
-            {/* ชื่อ-สกุล */}
-            <FormInput
+            <InputField
               label="ชื่อ-สกุล"
               placeholder="ชื่อ-สกุล"
               value={fullName}
@@ -149,8 +134,7 @@ export default function RegisterForm() {
               autoCapitalize="words"
             />
 
-            {/* เบอร์โทร */}
-            <FormInput
+            <InputField
               label="เบอร์โทรศัพท์"
               placeholder="0812345678"
               keyboardType="phone-pad"
@@ -169,44 +153,35 @@ export default function RegisterForm() {
                   value={staffRole}
                   onChange={setStaffRole}
                   options={[
-                    { value: "VOLUNTEER", label: "อาสาสมัคร" },
-                    { value: "OFFICER", label: "เจ้าหน้าที่" },
+                    { value: STAFF_ROLES.VOLUNTEER, label: "อาสาสมัคร" },
+                    { value: STAFF_ROLES.OFFICER, label: "เจ้าหน้าที่" },
                   ]}
                 />
               </VStack>
             )}
 
-            {/* Password */}
-            <InputPassword
+            <PasswordField
               label="รหัสผ่าน"
               placeholder="รหัสผ่าน (อย่างน้อย 6 ตัว)"
               value={password}
-              setValue={setPassword}
+              onChangeText={setPassword}
               isInvalid={!!registerMutation.error && !password}
             />
 
-            {/* Error Message from Mutation */}
-            {registerMutation.isError && (
-              <Box className="bg-error-50 p-3 rounded-lg border border-error-200 mt-2">
-                <Text className="text-error-600 font-medium text-sm text-center">
-                  เกิดข้อผิดพลาดในการสมัครสมาชิก
-                </Text>
-              </Box>
-            )}
+            {/* Error */}
+            <ErrorMessage
+              message="เกิดข้อผิดพลาดในการสมัครสมาชิก"
+              visible={registerMutation.isError}
+            />
 
             {/* ปุ่มสมัคร */}
-            <Button
-              size="xl"
+            <SubmitButton
+              isPending={registerMutation.isPending}
               onPress={handleRegister}
-              isDisabled={registerMutation.isPending}
-              className="rounded-2xl mt-6 shadow-md shadow-primary-500/30 bg-primary-600 hover:bg-primary-700 active:bg-primary-800"
+              className="mt-6"
             >
-              <ButtonText className="font-bold text-lg">
-                {registerMutation.isPending
-                  ? "กำลังสร้างบัญชี..."
-                  : "สร้างบัญชี"}
-              </ButtonText>
-            </Button>
+              {registerMutation.isPending ? "กำลังสร้างบัญชี..." : "สร้างบัญชี"}
+            </SubmitButton>
           </VStack>
         </FormControl>
       </VStack>

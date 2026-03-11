@@ -1,57 +1,55 @@
 import { useState } from "react";
-import { Alert } from "react-native";
 import { useMutation } from "@tanstack/react-query";
 import { ShieldCheck } from "lucide-react-native";
 
-import { loginSchema, LoginInput } from "@/features/auth/schemas/auth.schema";
 import {
   loginReporterAction,
   loginStaffAction,
+  LoginFormData,
 } from "@/features/auth/actions/auth.action";
+import { UserRole, USER_ROLES } from "@/types/auth.type";
+import { AppError } from "@/utils/validate.utils";
 
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { Text } from "@/components/ui/text";
 import { Heading } from "@/components/ui/heading";
-import { Button, ButtonText } from "@/components/ui/button";
 import { FormControl } from "@/components/ui/form-control";
 
-import FormInput from "@/components/shared/input/form-input";
-import InputPassword from "@/components/shared/input/input-password";
-import SegmentedControl from "@/components/shared/tab/segmented-control";
-
-// ประเภท role ที่เลือก login
-type RoleTab = "REPORTER" | "STAFF";
+import { InputField } from "@/components/shared/field/input-field";
+import { PasswordField } from "@/components/shared/field/password-field";
+import { SegmentedControl } from "@/components/shared/tab/segmented-control";
+import { SubmitButton } from "@/components/shared/button/submit-button";
+import { ErrorMessage } from "@/components/shared/error/error-message";
+import { showToast, useToast } from "@/components/shared/toast/show-toast";
 
 export default function LoginForm() {
-  const [activeRole, setActiveRole] = useState<RoleTab>("REPORTER");
+  const toast = useToast();
+  const [activeRole, setActiveRole] = useState<UserRole>(USER_ROLES.REPORTER);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // useMutation สำหรับ login
+  // useMutation — action จัดการ validate + API + store ให้หมด
   const loginMutation = useMutation({
-    mutationFn: (data: LoginInput) =>
-      activeRole === "REPORTER"
+    mutationFn: (data: LoginFormData) =>
+      activeRole === USER_ROLES.REPORTER
         ? loginReporterAction(data)
         : loginStaffAction(data),
     onError: (error: Error) => {
-      Alert.alert("เข้าสู่ระบบไม่สำเร็จ", error.message);
+      const isValidation =
+        error instanceof AppError && error.type === "validation";
+      showToast(toast, {
+        title: isValidation ? "กรุณาตรวจสอบข้อมูล" : "เข้าสู่ระบบไม่สำเร็จ",
+        description: error.message,
+        action: isValidation ? "warning" : "error",
+      });
     },
   });
 
-  // กดปุ่ม login
+  // กดปุ่ม login — ส่ง raw data ไป action (validate อยู่ใน action)
   const handleLogin = () => {
-    // Validate only when button is pressed
-    const parsed = loginSchema.safeParse({ email, password });
-    if (!parsed.success) {
-      const firstError = parsed.error.issues[0]?.message || "ข้อมูลไม่ถูกต้อง";
-      Alert.alert("กรุณาตรวจสอบข้อมูล", firstError);
-      return;
-    }
-
-    // Clear any previous error before trying again
     loginMutation.reset();
-    loginMutation.mutate(parsed.data);
+    loginMutation.mutate({ email, password });
   };
 
   return (
@@ -60,7 +58,7 @@ export default function LoginForm() {
         {/* หัวข้อและ Logo */}
         <VStack className="items-center mb-6" space="md">
           <Box className="bg-primary-50 p-4 rounded-full mb-2">
-            <ShieldCheck size={48} color="#FF6F00" strokeWidth={1.5} />
+            <ShieldCheck size={48} color="#E8711A" strokeWidth={1.5} />
           </Box>
           <VStack className="items-center">
             <Heading
@@ -84,8 +82,8 @@ export default function LoginForm() {
             value={activeRole}
             onChange={setActiveRole}
             options={[
-              { label: "ผู้แจ้งเหตุทั่วไป", value: "REPORTER" },
-              { label: "พนักงาน / อาสา", value: "STAFF" },
+              { label: "ผู้แจ้งเหตุทั่วไป", value: USER_ROLES.REPORTER },
+              { label: "พนักงาน / อาสา", value: USER_ROLES.STAFF },
             ]}
           />
         </Box>
@@ -93,8 +91,7 @@ export default function LoginForm() {
         {/* ฟอร์ม */}
         <FormControl isInvalid={!!loginMutation.error} className="w-full">
           <VStack space="xl">
-            {/* Email */}
-            <FormInput
+            <InputField
               label="อีเมล"
               placeholder="email@example.com"
               keyboardType="email-address"
@@ -103,13 +100,12 @@ export default function LoginForm() {
               isInvalid={!!loginMutation.error && !email}
             />
 
-            {/* Password */}
             <VStack space="sm">
-              <InputPassword
+              <PasswordField
                 label="รหัสผ่าน"
                 placeholder="กรอกรหัสผ่านของคุณ"
                 value={password}
-                setValue={setPassword}
+                onChangeText={setPassword}
                 isInvalid={!!loginMutation.error && !password}
               />
               <Text className="text-primary-600 text-sm font-semibold text-right mt-1">
@@ -117,28 +113,20 @@ export default function LoginForm() {
               </Text>
             </VStack>
 
-            {/* Error Message from Mutation */}
-            {loginMutation.isError && (
-              <Box className="bg-error-50 p-3 rounded-lg border border-error-200 mt-2">
-                <Text className="text-error-600 font-medium text-sm text-center">
-                  อีเมลหรือรหัสผ่านไม่ถูกต้อง
-                </Text>
-              </Box>
-            )}
+            {/* Error */}
+            <ErrorMessage
+              message="อีเมลหรือรหัสผ่านไม่ถูกต้อง"
+              visible={loginMutation.isError}
+            />
 
             {/* ปุ่ม Login */}
-            <Button
-              size="xl"
+            <SubmitButton
+              isPending={loginMutation.isPending}
               onPress={handleLogin}
-              isDisabled={loginMutation.isPending}
-              className="rounded-2xl mt-6 shadow-md shadow-primary-500/30 bg-primary-600 hover:bg-primary-700 active:bg-primary-800"
+              className="mt-6"
             >
-              <ButtonText className="font-bold text-lg">
-                {loginMutation.isPending
-                  ? "กำลังเข้าสู่ระบบ..."
-                  : "เข้าสู่ระบบ"}
-              </ButtonText>
-            </Button>
+              {loginMutation.isPending ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+            </SubmitButton>
           </VStack>
         </FormControl>
       </VStack>

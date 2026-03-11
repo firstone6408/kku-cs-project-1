@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { STAFF_ROLES } from "@/types/auth.type";
 
 // schema สำหรับ validate form login
 export const loginSchema = z.object({
@@ -19,7 +20,7 @@ export const registerStaffSchema = z.object({
   email: z.string().min(1, "กรุณากรอก email").email("รูปแบบ email ไม่ถูกต้อง"),
   fullName: z.string().min(1, "กรุณากรอกชื่อ-สกุล"),
   phone: z.string().min(1, "กรุณากรอกเบอร์โทร"),
-  role: z.enum(["VOLUNTEER", "OFFICER"], {
+  role: z.enum([STAFF_ROLES.VOLUNTEER, STAFF_ROLES.OFFICER], {
     error: "กรุณาเลือกบทบาท",
   }),
   password: z.string().min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"),
