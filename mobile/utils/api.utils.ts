@@ -44,7 +44,7 @@ export async function withApiHandling<T>(
   request: Promise<Response> | (() => Promise<Response>),
   config?: {
     validateResponse?: z.ZodSchema<T>;
-  }
+  },
 ): Promise<ApiResult<T>> {
   let status: ApiResult<T>["error"]["status"] = "success";
   let errorMessage = "No error";

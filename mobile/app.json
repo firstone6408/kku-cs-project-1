@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Realtime Emergency Pin Alert",
+    "description": "Real-time Emergency Pin-Alert Mobile Application for Khon Kaen University",
+    "slug": "realtime-emergency-pin-alert",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +13,7 @@
       "backgroundColor": "#ffffff"
     },
 
-    "scheme": "your-app-scheme",
+    "scheme": "realtime-emergency-pin-alert",
     "experiments": {
       "typedRoutes": true
     },
